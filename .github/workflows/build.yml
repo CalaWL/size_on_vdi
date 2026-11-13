@@ -1,0 +1,29 @@
+name: Build Windows EXE
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Check scanner
+        run: dotnet run --project tests/SizeOnVdi.Checks -c Release
+      - name: Publish standalone EXE
+        run: >-
+          dotnet publish src/SizeOnVdi/SizeOnVdi.csproj
+          -c Release -r win-x64 --self-contained true -o publish
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=None -p:DebugSymbols=false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SizeOnVdi-windows-x64
+          path: publish/SizeOnVdi.exe
+          if-no-files-found: error
+          retention-days: 30
